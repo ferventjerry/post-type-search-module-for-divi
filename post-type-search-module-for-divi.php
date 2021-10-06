@@ -4,13 +4,13 @@
  *
  * @package     post-type-search-module-for-divi
  * @author      Jerry Simmons <jerry@ferventsolutions.com>
- * @copyright   2018 Jerry Simmons
+ * @copyright   2021 Jerry Simmons
  * @license     GPL-2.0+
  *
  * @wordpress-plugin
  * Plugin Name:  Post Type Search Module For Divi
  * Description:  Custom Module To Enable Users To Search Selected Post Types
- * Version:      1.0
+ * Version:      1.2
  * Author:       Jerry Simmons <jerry@ferventsolutions.com>
  * Author URI:   https://ferventsolutions.com
  * Text Domain:  post-type-search-module-for-divi
@@ -32,34 +32,34 @@ add_action('pre_get_posts', 'jswj_custom_search_module_posttype_filter', 1);
 function jswj_custom_search_module_posttype_filter( $query ) {
 	if( isset( $_GET['posttype_search'] ) && !empty( $_GET['posttype_search'] ) && $query->is_search() ) {
 
-		// Sanitize $_GET
+		# Sanitize $_GET
 		$posttype_search = sanitize_text_field( $_GET['posttype_search'] );
 
-		// Validate - Array Items Are Post Types
+		# Validate - Array Items Are Post Types
 		$posttype_search = explode( ',', $posttype_search );
 		foreach( $posttype_search as $key => $posttype ) {
 
-			//Remove From Array If Value Is Not A Valid Post Type
+			# Remove From Array If Value Is Not A Valid Post Type
 			if( false === post_type_exists( $posttype ) ) {
 				unset( $posttype_search[$key] );
 			}
 
-		} // END foreach $posttype_search
+		} #END foreach $posttype_search
 
 		if( empty( $posttype_search ) ) {
 
-			// Modify Query To Return No Results If No Valid Post Types Are Specified
+			# Modify Query To Return No Results If No Valid Post Types Are Specified
 			$query->set( 'post__in', array(0) );
 
 		} else {
 
-			//Modify Query To Search Selected Post Types
+			# Modify Query To Search Selected Post Types
 			$query->set('post_type', $posttype_search);
 		}
 
 	}
 	return $query;
-} // END jswj_custom_search_module_posttype_filter()
+} #END jswj_custom_search_module_posttype_filter()
 
 
 /**
@@ -69,33 +69,54 @@ function jswj_custom_search_module_posttype_shortcode() {
 	$jswj_Custom_ET_Builder_Module_Search_posttype = new jswj_Custom_ET_Builder_Module_Search_posttype();
 	add_shortcode(
 		'et_pb_search_posttype',
-		array($jswj_Custom_ET_Builder_Module_Search_posttype, '_shortcode_callback')
+		array($jswj_Custom_ET_Builder_Module_Search_posttype, '_render')
 	);
 }
 
+/**
+ * Force load Search module styles.
+ *
+ * @return array
+ */
+function jswj_load_search_assets( $modules ) {
+	array_push( $modules, 'et_pb_search' );
+	return $modules;
+}
+add_filter( 'et_required_module_assets', 'jswj_load_search_assets' );
+
+/**
+ * Force load Contact Form module styles.
+ *
+ * @return array
+ */
+function smpl_load_contact_form_assets( $modules ) {
+	array_push( $modules, 'et_pb_search' );
+	return $modules;
+}
+add_filter( 'et_required_module_assets', 'smpl_load_contact_form_assets' );
+
+/**
+ * Force load Contact Form module styles above the fold.
+ *
+ * @return array
+ */
+function smpl_load_contact_form_assets_atf( $atf_modules ) {
+	array_push( $atf_modules, 'et_pb_search' );
+	return $atf_modules;
+}
+add_filter( 'et_dynamic_assets_modules_atf', 'smpl_load_contact_form_assets_atf', 20 );
 
 /**
  * Custom Module
  **/
 function jswj_custom_search_module_posttype() {
 
-	class jswj_Custom_ET_Builder_Module_Search_posttype extends ET_Builder_Module {
+	class jswj_Custom_ET_Builder_Module_Search_posttype extends ET_Builder_Module_Search {
 		function init() {
 			$this->name       = esc_html__( 'Post Type Search', 'et_builder' );
+			$this->plural     = esc_html__( 'Post Type Searches', 'et_builder' );
 			$this->slug       = 'et_pb_search_posttype';
-			$this->fb_support = true;
-
-			$this->whitelisted_fields = array(
-				'background_layout',
-				'admin_label',
-				'module_id',
-				'module_class',
-				'include_posttypes',
-				'button_color',
-				'show_button',
-				'placeholder',
-				'placeholder_color',
-			);
+			$this->vb_support = 'partial';
 
 			$this->fields_defaults = array(
 				'background_layout' => array( 'light' ),
@@ -105,7 +126,11 @@ function jswj_custom_search_module_posttype() {
 
 			$this->main_css_element = '%%order_class%%';
 
-			$this->options_toggles = array(
+			$this->whitelisted_fields = array(
+				'include_posttypes',
+			);
+
+			$this->settings_modal_toggles = array(
 				'general'  => array(
 					'toggles' => array(
 						'main_content' => esc_html__( 'Text', 'et_builder' ),
@@ -128,8 +153,9 @@ function jswj_custom_search_module_posttype() {
 					),
 				),
 			);
-			$this->advanced_options = array(
-				'fonts' => array(
+
+			$this->advanced_fields        = array(
+				'fonts'          => array(
 					'input' => array(
 						'label'    => esc_html__( 'Input', 'et_builder' ),
 						'css'      => array(
@@ -148,313 +174,435 @@ function jswj_custom_search_module_posttype() {
 						),
 					),
 					'button' => array(
-						'label'          => esc_html__( 'Button', 'et_builder' ),
-						'css'            => array(
+						'label'           => et_builder_i18n( 'Button' ),
+						'css'             => array(
 							'main'      => "{$this->main_css_element} input.et_pb_searchsubmit",
 							'important' => array( 'line-height', 'text-shadow' ),
 						),
-						'line_height'    => array(
+						'line_height'     => array(
 							'default' => '1em',
 						),
-						'font_size'      => array(
+						'font_size'       => array(
 							'default' => '14px',
 						),
-						'letter_spacing' => array(
+						'letter_spacing'  => array(
 							'default' => '0px',
 						),
 						'hide_text_align' => true,
 					),
 				),
-				'custom_margin_padding' => array(
-					'css' => array(
-						'main'      => "{$this->main_css_element} input.et_pb_s",
+				'margin_padding' => array(
+					'css'            => array(
+						'padding'   => "{$this->main_css_element} input.et_pb_s,{$this->main_css_element} input.et_pb_searchsubmit",
 						'important' => 'all',
 					),
+					'custom_padding' => array(
+						'default' => '0.715em|0.715em|0.715em|0.715em|false|false',
+					),
 				),
-				'background' => array(
+				'background'     => array(
 					'css' => array(
 						'main' => "{$this->main_css_element} input.et_pb_s",
 					),
 				),
-				'border' => array(
-					'css' => array(
-						'main' => array(
-							'border_radii' => "{$this->main_css_element}.et_pb_search, {$this->main_css_element} input.et_pb_s",
-							'border_styles' => "{$this->main_css_element}.et_pb_search",
+				'borders'        => array(
+					'default' => array(
+						'css'      => array(
+							'main' => array(
+								'border_radii'  => "{$this->main_css_element}.et_pb_search, {$this->main_css_element} input.et_pb_s",
+								'border_styles' => "{$this->main_css_element}.et_pb_search",
+							),
 						),
-					),
-					'defaults' => array(
-						'border_radii' => 'on|3px|3px|3px|3px',
-						'border_styles' => array(
-							'width' => '1px',
-							'color' => '#dddddd',
-							'style' => 'solid',
+						'defaults' => array(
+							'border_radii'  => 'on|3px|3px|3px|3px',
+							'border_styles' => array(
+								'width' => '1px',
+								'color' => '#dddddd',
+								'style' => 'solid',
+							),
 						),
 					),
 				),
-				'max_width'  => array(),
-				'text'       => array(
-					'css'              => array(
+				'text'           => array(
+					'use_background_layout' => true,
+					'css'                   => array(
+						'main'        => "{$this->main_css_element} input.et_pb_searchsubmit, {$this->main_css_element} input.et_pb_s",
 						'text_shadow' => "{$this->main_css_element} input.et_pb_searchsubmit, {$this->main_css_element} input.et_pb_s",
 					),
-					'text_orientation' => array(
+					'text_orientation'      => array(
 						'exclude_options' => array( 'justified' ),
 					),
+					'options'               => array(
+						'text_orientation'  => array(
+							'default' => 'left',
+						),
+						'background_layout' => array(
+							'default' => 'light',
+							'hover'   => 'tabs',
+						),
+					),
 				),
-				'filters' => array(),
+				'button'         => false,
+				'link_options'   => false,
+				'form_field'     => array(
+					'form_field' => array(
+						'label'          => esc_html__( 'Field', 'et_builder' ),
+						'css'            => array(
+							'main'        => '%%order_class%% form input.et_pb_s',
+							'hover'       => '%%order_class%% form input.et_pb_s:hover',
+							'focus'       => '%%order_class%% form input.et_pb_s:focus',
+							'focus_hover' => '%%order_class%% form input.et_pb_s:focus:hover',
+						),
+						'placeholder'    => false,
+						'margin_padding' => false,
+						'box_shadow'     => false,
+						'border_styles'  => false,
+						'font_field'     => array(
+							'css'            => array(
+								'main'        => implode(
+									', ',
+									array(
+										'%%order_class%% form input.et_pb_s',
+										'%%order_class%% form input.et_pb_s::placeholder',
+										'%%order_class%% form input.et_pb_s::-webkit-input-placeholder',
+										'%%order_class%% form input.et_pb_s::-ms-input-placeholder',
+										'%%order_class%% form input.et_pb_s::-moz-placeholder',
+									)
+								),
+								'placeholder' => true,
+								'important'   => array( 'line-height', 'text-shadow' ),
+							),
+							'line_height'    => array(
+								'default' => '1em',
+							),
+							'font_size'      => array(
+								'default' => '14px',
+							),
+							'letter_spacing' => array(
+								'default' => '0px',
+							),
+						),
+					),
+				),
+				'overflow'       => array(
+					'default' => 'hidden',
+				),
 			);
 
-			$this->custom_css_options = array(
+
+			$this->custom_css_fields = array(
 				'input_field' => array(
 					'label'    => esc_html__( 'Input Field', 'et_builder' ),
 					'selector' => 'input.et_pb_s',
 				),
 				'button'      => array(
-					'label'    => esc_html__( 'Button', 'et_builder' ),
+					'label'    => et_builder_i18n( 'Button' ),
 					'selector' => 'input.et_pb_searchsubmit',
+				),
+			);
+
+			$this->help_videos = array(
+				array(
+					'id'   => 'HNmb20Mdvno',
+					'name' => esc_html__( 'An introduction to the Search module', 'et_builder' ),
 				),
 			);
 		}
 
+		function get_posttypes_array() {
+			$posttypes = get_post_types( array( 'exclude_from_search'	=> false ), 'objects' );
+			unset( $posttypes['attachment'] );
+			unset( $posttypes['revision'] );
+			unset( $posttypes['nav_menu_item'] );
+			unset( $posttypes['custom_css'] );
+			unset( $posttypes['customize_changeset'] );
+			unset( $posttypes['oembed_cache'] );
+			unset( $posttypes['et_pb_layout'] );
+			return $posttypes;
+		}
+
 		function get_fields() {
 
-			/**
-			 * Build The Post Type Checkboxes
-			 **/
-			$posttypes = get_post_types( '', 'objects' );
-			$posttype_checkboxes = '';
-			foreach( $posttypes as $key => $posttype ) {
-				if( ('attachment' != $key) && ('revision' != $key)
-					&& ('nav_menu_item' != $key) && ('custom_css' != $key)
-					&& ('customize_changeset' != $key) && ('oembed_cache' != $key)
-					&& ('et_pb_layout' != $key) ) {
-					$posttype_checkboxes .= '<label><input type="checkbox" name="et_pb_include_posttypes" value="'.$key.'"<%= _.contains( et_pb_include_posttypes_temp, "'.$key.'" ) ? checked="checked" : "" %>> '.$posttype->label.'</label><br/>';
-				}
-			}
-			$get_post_types = '<div id="et_pb_include_posttypes">' . "<% var et_pb_include_posttypes_temp = typeof data !== 'undefined' && typeof data.et_pb_include_posttypes !== 'undefined' ? data.et_pb_include_posttypes.split( ',' ) : []; et_pb_include_posttypes_temp = typeof data === 'undefined' && typeof et_pb_include_posttypes !== 'undefined' ? et_pb_include_posttypes.split( ',' ) : et_pb_include_posttypes_temp; %>" . $posttype_checkboxes . '</div>';
-
 			$fields = array(
-				'background_layout' => array(
-					'label'           => esc_html__( 'Text Color', 'et_builder' ),
-					'type'            => 'select',
-					'option_category' => 'configuration',
-					'options'         => array(
-						'light' => esc_html__( 'Dark', 'et_builder' ),
-						'dark'  => esc_html__( 'Light', 'et_builder' ),
-					),
-					'tab_slug'        => 'advanced',
-					'toggle_slug'     => 'text',
-					'description'     => esc_html__( 'Here you can choose the value of your text. If you are working with a dark background, then your text should be set to light. If you are working with a light background, then your text should be dark.', 'et_builder' ),
-				),
-				'show_button' => array(
+				'show_button'        => array(
 					'label'           => esc_html__( 'Show Button', 'et_builder' ),
 					'type'            => 'yes_no_button',
 					'option_category' => 'configuration',
 					'options'         => array(
-						'on'  => esc_html__( 'Yes', 'et_builder' ),
-						'off' => esc_html__( 'No', 'et_builder' ),
+						'on'  => et_builder_i18n( 'Yes' ),
+						'off' => et_builder_i18n( 'No' ),
 					),
+					'default'         => 'on',
 					'toggle_slug'     => 'elements',
 					'description'     => esc_html__( 'Turn this on to show the Search button', 'et_builder' ),
-					'default'         => 'on',
+					'mobile_options'  => true,
+					'hover'           => 'tabs',
 				),
-				'placeholder' => array(
-					'label'       => esc_html__( 'Placeholder Text', 'et_builder' ),
-					'type'        => 'text',
-					'description' => esc_html__( 'Type the text you want to use as placeholder for the search field.', 'et_builder' ),
-					'toggle_slug' => 'main_content',
-				),
-				'button_color' => array(
-					'label'        => esc_html__( 'Button and Border Color', 'et_builder' ),
-					'type'         => 'color-alpha',
-					'custom_color' => true,
-					'tab_slug'     => 'advanced',
-					'toggle_slug'  => 'button',
-				),
-				'placeholder_color' => array(
-					'label'        => esc_html__( 'Placeholder Color', 'et_builder' ),
-					'type'         => 'color-alpha',
-					'custom_color' => true,
-					'tab_slug'     => 'advanced',
-					'toggle_slug'  => 'field',
-				),
-				'disabled_on' => array(
-					'label'           => esc_html__( 'Disable on', 'et_builder' ),
-					'type'            => 'multiple_checkboxes',
-					'options'         => array(
-						'phone'   => esc_html__( 'Phone', 'et_builder' ),
-						'tablet'  => esc_html__( 'Tablet', 'et_builder' ),
-						'desktop' => esc_html__( 'Desktop', 'et_builder' ),
-					),
-					'additional_att'  => 'disable_on',
-					'option_category' => 'configuration',
-					'description'     => esc_html__( 'This will disable the module on selected devices', 'et_builder' ),
-					'tab_slug'        => 'custom_css',
-					'toggle_slug'     => 'visibility',
-				),
-				'admin_label' => array(
-					'label'       => esc_html__( 'Admin Label', 'et_builder' ),
-					'type'        => 'text',
-					'description' => esc_html__( 'This will change the label of the module in the builder for easy identification.', 'et_builder' ),
-					'toggle_slug' => 'admin_label',
-				),
-				'module_id' => array(
-					'label'           => esc_html__( 'CSS ID', 'et_builder' ),
+				'placeholder'        => array(
+					'label'           => esc_html__( 'Input Placeholder', 'et_builder' ),
 					'type'            => 'text',
-					'option_category' => 'configuration',
-					'tab_slug'        => 'custom_css',
-					'toggle_slug'     => 'classes',
-					'option_class'    => 'et_pb_custom_css_regular',
+					'description'     => esc_html__( 'Type the text you want to use as placeholder for the search field.', 'et_builder' ),
+					'toggle_slug'     => 'main_content',
+					'dynamic_content' => 'text',
+					'mobile_options'  => true,
+					'hover'           => 'tabs',
 				),
-				'module_class' => array(
-					'label'           => esc_html__( 'CSS Class', 'et_builder' ),
-					'type'            => 'text',
-					'option_category' => 'configuration',
-					'tab_slug'        => 'custom_css',
-					'toggle_slug'     => 'classes',
-					'option_class'    => 'et_pb_custom_css_regular',
+				'button_color'       => array(
+					'label'          => esc_html__( 'Button and Border Color', 'et_builder' ),
+					'type'           => 'color-alpha',
+					'custom_color'   => true,
+					'tab_slug'       => 'advanced',
+					'toggle_slug'    => 'button',
+					'hover'          => 'tabs',
+					'mobile_options' => true,
+					'sticky'         => true,
 				),
+				'placeholder_color'  => array(
+					'label'          => esc_html__( 'Placeholder Color', 'et_builder' ),
+					'description'    => esc_html__( 'Pick a color to be used for the placeholder written inside input fields.', 'et_builder' ),
+					'type'           => 'color-alpha',
+					'custom_color'   => true,
+					'tab_slug'       => 'advanced',
+					'toggle_slug'    => 'form_field',
+					'hover'          => 'tabs',
+					'mobile_options' => true,
+					'sticky'         => true,
+				),
+
+				/**
+				 * JSWJ - POST TYPE SEARCH MODULE FOR DIVI
+				 * Include The Post Type Options
+				 **/
 				'include_posttypes' => array(
 					'label'            => esc_html__( 'Include Post Types', 'et_builder' ),
-					'renderer'         => $get_post_types,
+					'type'             => 'multiple_checkboxes',
 					'option_category'  => 'basic_option',
+					'depends_show_if'  => 'off',
 					'description'      => esc_html__( 'Select the post types that you would like to include in the search. If none are selected, all post types will be included in the search.', 'et_builder' ),
 					'toggle_slug'      => 'main_content',
+				),
+
+			);
+
+			/**
+			 * Build The Post Type Checkboxes
+			 **/
+			$posttypes = $this->get_posttypes_array();
+			foreach( $posttypes as $key => $posttype ) {
+				$fields['include_posttypes']['options'][$key] = $posttype->label;
+			}
+
+			return $fields;
+		}
+
+		public function get_transition_fields_css_props() {
+			$fields = parent::get_transition_fields_css_props();
+
+			$fields['button_color'] = array(
+				'background-color' => '%%order_class%% input.et_pb_searchsubmit',
+				'border-color'     => array(
+					'%%order_class%% input.et_pb_searchsubmit',
+					'%%order_class%% input.et_pb_s'
+				),
+			);
+
+			$fields['placeholder_color'] = array(
+				'color' => array(
+					'%%order_class%% form input.et_pb_s::placeholder',
+					'%%order_class%% form input.et_pb_s::-webkit-input-placeholder',
+					'%%order_class%% form input.et_pb_s::-ms-input-placeholder',
+					'%%order_class%% form input.et_pb_s::-moz-placeholder',
 				),
 			);
 
 			return $fields;
 		}
 
-		function shortcode_callback( $atts, $content = null, $function_name ) {
-			$module_id          = $this->shortcode_atts['module_id'];
-			$module_class       = $this->shortcode_atts['module_class'];
-			$background_layout  = $this->shortcode_atts['background_layout'];
-			$button_color       = $this->shortcode_atts['button_color'];
-			$show_button        = $this->shortcode_atts['show_button'];
-			$placeholder        = $this->shortcode_atts['placeholder'];
-			$placeholder_color  = $this->shortcode_atts['placeholder_color'];
-			$input_line_height  = $this->shortcode_atts['input_line_height'];
-			$include_posttypes  = $this->shortcode_atts['include_posttypes'];
+		/**
+		 * JSWJ - POST TYPE SEARCH MODULE FOR DIVI
+		 * Add et_pb_search to Divi's dynamic search assets
+		 *
+		 * Used with add_filter in the render() function
+		 *
+		 * @return array
+		 **/
+		public function jswj_ptsm_load_search_assets( $modules ) {
+			array_push( $modules, 'et_pb_search' );
+			return $modules;
+		}
 
-			$module_class              = ET_Builder_Element::add_module_order_class( $module_class, $function_name );
+		public function render( $attrs, $content, $render_slug ) {
+			$multi_view                = et_pb_multi_view_options( $this );
+			$show_button               = $this->props['show_button'];
+
+			/**
+			 * JSWJ - POST TYPE SEARCH MODULE FOR DIVI
+			 *
+			 * Load Divi's dynamic search assets
+			 **/
+			add_filter( 'et_required_module_assets', [$this,'jswj_ptsm_load_search_assets'] );
+
+			/**
+			 * JSWJ - POST TYPE SEARCH MODULE FOR DIVI
+			 **/
+			$include_posttypes         = $this->props['include_posttypes'];
+
+			# Get Comma Separated Post Types To Search
+			$index  = 0;
+			$posttypes = array_keys( $this->get_posttypes_array() );
+			foreach ( explode( '|', $include_posttypes ) as $checkbox_value ) {
+				if ( 'off' === $checkbox_value ) { unset( $posttypes[$index] ); }
+				$index++;
+			}
+			$search_types = implode( ',', $posttypes );
+
+			$placeholder               = $multi_view->render_element(
+				array(
+					'tag'   => 'input',
+					'attrs' => array(
+						'type'        => 'text',
+						'name'        => 's',
+						'class'       => 'et_pb_s',
+						'placeholder' => '{{placeholder}}',
+					),
+				)
+			);
+			$input_line_height         = $this->props['form_field_line_height'];
 			$video_background          = $this->video_background();
 			$parallax_image_background = $this->get_parallax_image_background();
 
-			$this->shortcode_content = et_builder_replace_code_content_entities( $this->shortcode_content );
+			$this->content = et_builder_replace_code_content_entities( $this->content );
 
-			if ( '' !== $button_color ) {
-				ET_Builder_Element::set_style( $function_name, array(
-					'selector'    => '%%order_class%% input.et_pb_searchsubmit',
-					'declaration' => sprintf(
-						'background: %1$s !important;border-color:%1$s !important;',
-						esc_html( $button_color )
-					),
-				) );
+			# Button Color.
+			$this->generate_styles(
+				array(
+					'base_attr_name'                  => 'button_color',
+					'selector'                        => '%%order_class%% input.et_pb_searchsubmit',
+					'hover_pseudo_selector_location'  => 'suffix',
+					'sticky_pseudo_selector_location' => 'prefix',
+					'css_property'                    => array( 'background-color', 'border-color' ),
+					'important'                       => true,
+					'render_slug'                     => $render_slug,
+					'type'                            => 'color',
+				)
+			);
+			$this->generate_styles(
+				array(
+					'base_attr_name'                  => 'button_color',
+					'selector'                        => '%%order_class%% input.et_pb_s',
+					'hover_pseudo_selector_location'  => 'suffix',
+					'sticky_pseudo_selector_location' => 'prefix',
+					'css_property'                    => 'border-color',
+					'important'                       => true,
+					'render_slug'                     => $render_slug,
+					'type'                            => 'color',
+				)
+			);
 
-				ET_Builder_Element::set_style( $function_name, array(
-					'selector'    => '%%order_class%% input.et_pb_s',
-					'declaration' => sprintf(
-						'border-color:%1$s !important;',
-						esc_html( $button_color )
-					),
-				) );
-			}
+			# Placeholder Color.
+			$placeholder_selectors = array(
+				'%%order_class%% form input.et_pb_s::-webkit-input-placeholder',
+				'%%order_class%% form input.et_pb_s::-moz-placeholder',
+				'%%order_class%% form input.et_pb_s:-ms-input-placeholder',
+			);
 
-			if ( '' !== $placeholder_color ) {
-				$placeholder_selectors = array(
-					'%%order_class%% form input.et_pb_s::-webkit-input-placeholder',
-					'%%order_class%% form input.et_pb_s::-moz-placeholder',
-					'%%order_class%% form input.et_pb_s:-ms-input-placeholder',
-				);
-
-				foreach ( $placeholder_selectors as $single_selector ) {
-					ET_Builder_Element::set_style( $function_name, array(
-						'selector'    => $single_selector,
-						'declaration' => sprintf(
-							'color: %1$s !important;',
-							esc_html( $placeholder_color )
-						),
-					) );
-				}
-			}
+			$this->generate_styles(
+				array(
+					'base_attr_name'                  => 'placeholder_color',
+					'selector'                        => join( ', ', $placeholder_selectors ),
+					'hover_pseudo_selector_location'  => 'suffix',
+					'sticky_pseudo_selector_location' => 'prefix',
+					'css_property'                    => 'color',
+					'important'                       => true,
+					'render_slug'                     => $render_slug,
+					'type'                            => 'color',
+				)
+			);
 
 			if ( '' !== $input_line_height ) {
-				ET_Builder_Element::set_style( $function_name, array(
+				$el_style = array(
 					'selector'    => '%%order_class%% input.et_pb_s',
 					'declaration' => 'height: auto; min-height: 0;',
-				) );
-			}
-
-			$custom_margin = explode('|', $this->shortcode_atts['custom_margin']);
-			$has_custom_margin = isset( $custom_margin[0], $custom_margin[1], $custom_margin[2],  $custom_margin[3] );
-			$custom_margin_units = array();
-
-			if ( $has_custom_margin ) {
-				$button_top    = $custom_margin[0];
-				$button_bottom = $custom_margin[2];
-				$custom_margin_left_unit = et_pb_get_value_unit( $custom_margin[3] );
-				$button_right  = ( 0 - floatval( $custom_margin[3] ) ) . $custom_margin_left_unit;
-
-				$custom_margin_units = array(
-					et_pb_get_value_unit( $custom_margin[0] ),
-					et_pb_get_value_unit( $custom_margin[1] ),
-					et_pb_get_value_unit( $custom_margin[2] ),
-					$custom_margin_left_unit,
 				);
+				ET_Builder_Element::set_style( $render_slug, $el_style );
+			}
 
-				ET_Builder_Element::set_style( $function_name, array(
-					'selector'    => '%%order_class%%.et_pb_search input.et_pb_searchsubmit',
-					'declaration' => sprintf(
-						'min-height: 0 !important; top: %1$s; right: %2$s; bottom: %3$s;',
-						esc_html( $button_top ),
-						esc_html( $button_right ),
-						esc_html( $button_bottom )
+			# Module classnames
+
+			/**
+			 * JSWJ - POST TYPE SEARCH MODULE FOR DIVI
+			 *
+			 * Add class name to module div to apply built in styling
+			 **/
+			$this->add_classname( 'et_pb_search' );
+
+			$this->add_classname(
+				array(
+					$this->get_text_orientation_classname( true ),
+				)
+			);
+
+			# Background layout class names.
+			$background_layout_class_names = et_pb_background_layout_options()->get_background_layout_class( $this->props );
+			$this->add_classname( $background_layout_class_names );
+
+			if ( 'on' !== $show_button ) {
+				$this->add_classname( 'et_pb_hide_search_button' );
+			}
+
+			# Background layout data attributes.
+			$data_background_layout = et_pb_background_layout_options()->get_background_layout_attrs( $this->props );
+
+			$multi_view_show_button_data_attr = $multi_view->render_attrs(
+				array(
+					'classes' => array(
+						'et_pb_hide_search_button' => array(
+							'show_button' => 'off',
+						),
 					),
-				) );
-			}
-
-			$class = " et_pb_module et_pb_bg_layout_{$background_layout}{$this->get_text_orientation_classname(true)}";
-			$class .= 'on' !== $show_button ? ' et_pb_hide_search_button' : '';
-
-			if ( ! empty( $custom_margin_units ) && in_array( '%', $custom_margin_units ) ) {
-				$class .= " et_pb_search_percentage_custom_margin";
-			}
+				)
+			);
 
 			$output = sprintf(
-				'<div%3$s class="et_pb_search%2$s%4$s%11$s%13$s">
-					%14$s
-					%12$s
-					<form role="search" method="get" class="et_pb_searchform zzz" action="%1$s">
-						<div>
-							<label class="screen-reader-text" for="s">%9$s</label>
-							<input type="text" value="" name="s" class="et_pb_s"%8$s>
-							<input type="hidden" name="posttype_search" value="%15$s" />
-							%5$s
-							%6$s
-							%7$s
-							<input type="submit" value="%10$s" class="et_pb_searchsubmit">
-						</div>
-					</form>
-				</div> <!-- .et_pb_text -->',
+				'<div%3$s class="%2$s"%12$s%13$s>
+				%11$s
+				%10$s
+				<form role="search" method="get" class="et_pb_searchform" action="%1$s">
+					<div>
+						<label class="screen-reader-text" for="s">%8$s</label>
+						%7$s
+						<input type="hidden" name="et_pb_searchform_submit" value="et_search_proccess" />
+						<!-- JSWJ - POST TYPE SEARCH MODULE FOR DIVI -->
+						<input type="hidden" name="posttype_search" value="%14$s" />
+						%4$s
+						%5$s
+						%6$s
+						<input type="submit" value="%9$s" class="et_pb_searchsubmit">
+					</div>
+				</form>
+			</div>',
 				esc_url( home_url( '/' ) ),
-				esc_attr( $class ),
-				( '' !== $module_id ? sprintf( ' id="%1$s"', esc_attr( $module_id ) ) : '' ),
-				( '' !== $module_class ? sprintf( ' %1$s', esc_attr( $module_class ) ) : '' ),
+				$this->module_classname( $render_slug ),
+				$this->module_id(),
 				'',
+				'', // #5
 				'',
-				'',
-				'' !== $placeholder ? sprintf( ' placeholder="%1$s"', esc_attr( $placeholder ) ) : '',
+				$placeholder,
 				esc_html__( 'Search for:', 'et_builder' ),
 				esc_attr__( 'Search', 'et_builder' ),
-				'' !== $video_background ? ' et_pb_section_video et_pb_preload' : '',
-				$video_background,
-				'' !== $parallax_image_background ? ' et_pb_section_parallax' : '',
+				$video_background, // #10
 				$parallax_image_background,
-				htmlspecialchars_decode( $include_posttypes )
+				et_core_esc_previously( $data_background_layout ),
+				$multi_view_show_button_data_attr,
+
+				/**
+				 * JSWJ - POST TYPE SEARCH MODULE FOR DIVI
+				 **/
+				htmlspecialchars_decode( $search_types ) # %14$s
 			);
 
 			return $output;
 		}
+
 	}
-} // END jswj_custom_search_module_posttype()
+} # END jswj_custom_search_module_posttype()

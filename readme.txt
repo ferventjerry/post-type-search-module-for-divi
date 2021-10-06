@@ -3,8 +3,8 @@ Contributors: ferventsolutions
 Donate link: https://www.ferventsolutions.com/donations/donate/
 Tags: divi, elegant themes, search, post type, custom post type, custom module, divi module
 Requires at least: 4.6
-Tested up to: 4.9.2
-Stable tag: 1.0
+Tested up to: 5.8
+Stable tag: 1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,9 +16,6 @@ Sometimes you just want search results to be limited to a custom post type. Or y
 **Post Type Search Module For Divi** adds a custom module to the Divi Theme by Elegant Themes. This module operates like the standard Search Module, but also allows you to select the Post Types that you want users to be able to search. You can select one post type, or many, the choice is up to you!
 
 This only impacts searches initiated by this custom module, the standard Divi Search Module and WordPress search functions continue to operate normally.
-
-
-PLEASE NOTE: Third party custom modules for Divi are not accessible while using the Visual Builder. To utilize this module, edit the page and use the Classic Divi Builder.
 
 
 == Installation ==
@@ -43,6 +40,12 @@ This plugin only works when the Divi Theme is active, or when the Divi Builder P
 3. Post Type Search Module Settings with Projects Selected
 
 == Changelog ==
+
+= 1.2 =
+* Fix for missing styles after Divi's Dynamic Assets Update
+
+= 1.1 =
+* Updated To Work Better Within Divi's Visual Builder
 
 = 1.0 =
 * Initial Release
