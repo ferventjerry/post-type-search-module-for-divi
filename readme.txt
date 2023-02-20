@@ -41,6 +41,9 @@ This plugin only works when the Divi Theme is active, or when the Divi Builder P
 
 == Changelog ==
 
+= 1.2.1 =
+* Fix to repair search functionality that was broken in the last update
+
 = 1.2 =
 * Fix for missing styles after Divi's Dynamic Assets Update
 

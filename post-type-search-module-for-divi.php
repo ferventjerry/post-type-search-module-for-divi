@@ -10,7 +10,7 @@
  * @wordpress-plugin
  * Plugin Name:  Post Type Search Module For Divi
  * Description:  Custom Module To Enable Users To Search Selected Post Types
- * Version:      1.2
+ * Version:      1.2.1
  * Author:       Jerry Simmons <jerry@ferventsolutions.com>
  * Author URI:   https://ferventsolutions.com
  * Text Domain:  post-type-search-module-for-divi
@@ -571,7 +571,6 @@ function jswj_custom_search_module_posttype() {
 					<div>
 						<label class="screen-reader-text" for="s">%8$s</label>
 						%7$s
-						<input type="hidden" name="et_pb_searchform_submit" value="et_search_proccess" />
 						<!-- JSWJ - POST TYPE SEARCH MODULE FOR DIVI -->
 						<input type="hidden" name="posttype_search" value="%14$s" />
 						%4$s
